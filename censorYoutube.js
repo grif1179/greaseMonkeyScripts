@@ -1,28 +1,50 @@
 // ==UserScript==
 // @name     Youtube addiction remover
-// @version  1
-// @grant    Author
+// @version  2
+// @include https://www.youtube.com*
+// @include https://www.youtube.com/watch*
+// @grant    none
+// @run-at document-idle
 // ==/UserScript==
 
-let currUrl = window.location.href;
-if (currUrl === "https://www.youtube.com/" || currUrl === "https://www.youtube.com") {
-    var waitForMainLoad = setInterval(function() {
-        console.log("Checking");
-        if(document.body.getElementsByTagName("ytd-browse").length > 0 ) {
-            sanitizeMainPage();
-            console.log("COMPLETED");
-            clearInterval(waitForMainLoad);
+main();
+
+var mainElement = document.getElementsByTagName("ytd-app")[0];
+
+var observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if(mutation.type == "attributes") {
+            main();
         }
-    }, 500);
-} else if (currUrl.includes("www.youtube.com/watch")) {
-    var waitForWatchLoad = setInterval(function() {
-        console.log("Checking");
-        if(document.body.getElementsByClassName("ytd-watch-next-secondary-results-renderer").length > 0 ) {
-            sanitizeWatchPage();
-            console.log("COMPLETED");
-            clearInterval(waitForWatchLoad);
-        }
-    }, 500);
+    });
+});
+observer.observe(mainElement, {attributes: true});
+
+function main() {
+    let currUrl = window.location.href;
+
+    console.log("Starting Main Script");
+    if (currUrl === "https://www.youtube.com" || currUrl === "https://www.youtube.com/") {
+        var waitForMainLoad = setInterval(function() {
+            let mainArea = document.body.getElementsByTagName("ytd-browse");
+            if(mainArea.length > 0 && mainArea[0].getAttribute("hidden") !== "") {
+                console.log("Checking Main");
+                sanitizeMainPage();
+                console.log("COMPLETED Main");
+                clearInterval(waitForMainLoad);
+            }
+        }, 500);
+    } else if (currUrl.includes("www.youtube.com/watch")) {
+        var waitForWatchLoad = setInterval(function() {
+            let suggestedVids = document.body.getElementsByClassName("ytd-watch-next-secondary-results-renderer");
+            if(suggestedVids.length > 0 && suggestedVids[0].getAttribute("hidden") !== "") {
+                console.log("Checking Watch Page");
+                sanitizeWatchPage();
+                console.log("COMPLETED Watch Page");
+                clearInterval(waitForWatchLoad);
+            }
+        }, 500);
+    }
 }
 
 
@@ -36,7 +58,7 @@ function sanitizeWatchPage() {
     let suggestedVideos = document.body.getElementsByClassName("ytd-watch-next-secondary-results-renderer"); 
     let autoPlayBtn     = document.getElementById("toggle");
 
-    if(autoPlayBtn.getAttribute("checked") != null || autoPlayBtn.getAttribute("active") != null) {
+    if(autoPlayBtn !== null && (autoPlayBtn.getAttribute("checked") != null || autoPlayBtn.getAttribute("active") != null)) {
         console.log("Auto play turned off");
         autoPlayBtn.click();
     }
